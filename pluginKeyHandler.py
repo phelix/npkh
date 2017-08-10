@@ -39,10 +39,8 @@ if __name__ == "__main__":
     rpcOptions = tmpRpc.options
     del tmpRpc
 
-import os
 import json
 import urllib2
-import copy
 import bottle
 
 import common
@@ -273,7 +271,7 @@ class RequestHandler(object):
             k = idRequest.get_key(self.standardKeyServer)
             return k
         else:
-            abort(501, "Not implemented.")
+            bottle.abort(501, "Not implemented.")
 
 class KeyServer(object):
     def __init__(self, host=DEFAULTHOST, port=DEFAULTPORT,
