@@ -29,10 +29,12 @@ if __name__ == "__main__":
     standalone = True
     import sys
     sys.path.append("../lib")  # for standalone debugging
-    sys.path.append("../../nameGUI/lib")  # for standalone debugging
+    #sys.path.append("../../nameGUI/lib")  # for standalone debugging
 
     import namerpc
-    tmpRpc = namerpc.CoinRpc(connectionType="auto")  # cache looked up rpc options
+
+    # cache looked up rpc options
+    tmpRpc = namerpc.CoinRpc(connectionType="auto")
     rpcConnectionType = tmpRpc.connectionType
     rpcOptions = tmpRpc.options
     del tmpRpc
@@ -204,10 +206,9 @@ class StandaloneIdRequest(IdRequest):
         return value
 
 class RequestHandler(object):
-    def __init__(self, standardKeyServer=DEFAULTKEYSERVER, standalone=False):
+    def __init__(self, standardKeyServer=DEFAULTKEYSERVER):
         self.idFprs = {}  # all lowercase so we don't have to handle 0X instead of 0x
         self.standardKeyServer = standardKeyServer
-        self.standalone = standalone
         log.debug("New RequestHandler")
 
     def proxy_to_standard_pks(self, request):
@@ -276,8 +277,7 @@ class RequestHandler(object):
 
 class KeyServer(object):
     def __init__(self, host=DEFAULTHOST, port=DEFAULTPORT,
-                 standardKeyServer=DEFAULTKEYSERVER,
-                 standalone=False):
+                 standardKeyServer=DEFAULTKEYSERVER):
         self.host = host
         self.port = port
         self.standardKeyServer = standardKeyServer
@@ -285,7 +285,7 @@ class KeyServer(object):
         self.app = bottle.Bottle()
         self.app.route('/pks/lookup', ['GET', 'POST'], self.serve)
         self.app.route('/pks/add', ['GET', 'POST'], self.httpError501)  # as per the hkp spec
-        self.rh = RequestHandler(self.standardKeyServer, standalone=self.standalone)
+        self.rh = RequestHandler(self.standardKeyServer)
 
     def start(self):
         bottle.run(self.app, host=DEFAULTHOST, port=DEFAULTPORT)
@@ -302,18 +302,15 @@ class KeyServer(object):
         bottle.abort(501, "Not implemented.")
 
 
-import socket
-
-
 if __name__ == "__main__":
     print "nmcKeyServer: standalone"
-    if 1:
+    if 0:
         ks = KeyServer()
         ks.start()
     else:
         # testing
         if 0:
-            rh = RequestHandler(standalone=True)
+            rh = RequestHandler()
             print rh.lookup('id/phelix', 'index') + "\n"
             print rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'index') + "\n"
             print rh.lookup('id/phelix', 'get')[:100] + "...\n"  # public keyserver
