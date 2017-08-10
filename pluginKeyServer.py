@@ -307,12 +307,12 @@ import socket
 
 if __name__ == "__main__":
     print "nmcKeyServer: standalone"
-    if 0:
+    if 1:
         ks = KeyServer()
         ks.start()
     else:
         # testing
-        if 1:
+        if 0:
             rh = RequestHandler(standalone=True)
             print rh.lookup('id/phelix', 'index') + "\n"
             print rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'index') + "\n"
