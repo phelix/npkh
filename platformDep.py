@@ -1,4 +1,5 @@
 import os
+import stat
 import platform
 
 def getNamecoinDir():

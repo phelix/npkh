@@ -1,15 +1,14 @@
-from common import *
+import common
+app = common.app  # global NMControl app object
 import threading
-import time
 import os
 from optparse import OptionGroup
 from ConfigParser import SafeConfigParser
 #import optparse
 #import ConfigParser
 import inspect
-import json
 
-log = get_logger(__name__)
+log = common.get_logger(__name__)
 
 def public(func):
     func.rpc_public = True
@@ -69,7 +68,6 @@ class PluginThread(threading.Thread):
 
     def pStart(self, arg = []):
         log.debug("Plugin %s parent start" %(self.name))
-        #time.sleep(1)
         return True
 
     def stop(self, arg = []):

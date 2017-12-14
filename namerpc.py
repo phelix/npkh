@@ -29,7 +29,6 @@
 # separate NMControl and client?
 
 import bitcoinrpc.authproxy
-import base64
 import socket
 import json
 import sys
@@ -254,7 +253,7 @@ class CoinRpc(object):
             try:
                 options = self.get_options_client()
                 if DEBUG:
-                    print "client options from conf file:", optoins
+                    print "client options from conf file:", options
             except:
                 pass
             if not 'rpcuser' in options or not 'rpcpassword' in options:
@@ -341,7 +340,7 @@ class CoinRpc(object):
         else:
             try:
                 data = self.call("name_show", [name])
-            except WalletError:
+            except WalletError:  # class WallerError is created programatically at startup
                 raise NameDoesNotExistError()
         return data
 
