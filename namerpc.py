@@ -28,7 +28,7 @@
 # todo: setting an empty value does not work
 # separate NMControl and client?
 
-import authproxy
+import bitcoinrpc.authproxy
 import base64
 import socket
 import json
@@ -149,7 +149,7 @@ class CoinRpc(object):
         s = ("http://" + str(self.options["rpcuser"]) + ":" +
             str(self.options["rpcpassword"]) +"@" + self.host +
             ":" + str(self.options["rpcport"]))
-        self.authServiceProxy = authproxy.AuthServiceProxy(s)
+        self.authServiceProxy = bitcoinrpc.authproxy.AuthServiceProxy(s)
 
     def _detect_connection(self):
         options = self.options
@@ -210,7 +210,7 @@ class CoinRpc(object):
                     val['result'] = self.authServiceProxy.__getattr__(method)(*params)
                 else:
                     raise
-        except authproxy.JSONRPCException as e:
+        except bitcoinrpc.authproxy.JSONRPCException as e:
             val = {"error" : e.error}
             try:
                 val["code"] = e.error["code"]
