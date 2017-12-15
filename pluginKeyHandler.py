@@ -4,6 +4,20 @@ DEFAULTHOST = "127.0.0.1"  # 0.0.0.0 allows public access
 DEFAULTPORT = "8083"
 DEFAULTKEYSERVER = "sks-keyservers.net"
 
+"""
+The main OpenPGP HTTP Keyserver Protocol functions are 'index' to search for a list
+of keys and 'get' to retrieve a pgp key corresponding to a fingerprint. PGP keys are
+usually looked up by first doing an 'index' operation and then a 'get' operation
+requesting the PGP key by fingerprint. Because of this we need to cache fingerprints
+for Namecoin ID lookups so that we know whether a fingerprint belongs to a
+Namecoin ID. Unlike normal requests PGP keys for Namecoin IDs might be
+downloaded from a custom website as specified in the name value. Also it will be
+verified a cached fingerprint is still up to date.
+Note: The integrity of the returned data will be validated externally in GPG (e.g.
+verifying that a key matches a long fingerprint).
+
+"""
+
 # workaround to make bottle stoppable - this can be cleaned up with bottle 0.13
 import wsgiref.simple_server
 original_make_server = wsgiref.simple_server.make_server
@@ -76,6 +90,8 @@ class pluginKeyServer(plugin.PluginThread):
         self.server = None
         return True
 
+## This could be used to check the key matches the fingerprint at the end of get_key().
+## Should not be necessary as it will be checked by the importing software.
 ##import pgpdump
 ##
 ##def get_fingerprint(asciiArmored):
@@ -171,8 +187,6 @@ class IdRequest(object):
             log.debug("get_key: trying keyserver url:", url)
             k = self.url_read(url)
         log.debug("get_key: ok, len: " + str(len(k)))
-        #if get_fingerprint(k) != search:  # should be checked by gpg
-         #   bottle.abort(415, "Fingerprint mismatch.")
         return k
 
 class StandaloneIdRequest(IdRequest):
@@ -200,11 +214,14 @@ class StandaloneIdRequest(IdRequest):
 
 class RequestHandler(object):
     def __init__(self, standardKeyServer=DEFAULTKEYSERVER):
-        self.idFprs = {}  # all lowercase so we don't have to handle 0X instead of 0x
+        # cache to connecting fingerprints to names - all lowercase so we don't have to handle 0X instead of 0x
+        self.idFprs = {}
+
         self.standardKeyServer = standardKeyServer
         log.debug("New RequestHandler")
 
     def proxy_to_standard_pks(self, request):
+        """Pass request through to default keyserver."""
         # currently this will break with NMControl as global system DNS because of
         # getaddrinfo not being thread safe (see get_key above)
         log.debug("proxying to " + self.standardKeyServer)
@@ -220,19 +237,21 @@ class RequestHandler(object):
 
     def lookup(self, search, op, request=None):
         name = None
-        if search.startswith("id/"):
+        if search.startswith("id/"):  # looking up a Namecoin id/ ?
             name = search
 
         searchFpr = None
-        if search.lower() in self.idFprs:
+        if search.lower() in self.idFprs:  # looking up a cached fingerprint?
             searchFpr = search.lower()
 
         log.debug("lookup: search:", search, " name:", name, " searchFpr:", searchFpr,
                   " request:", request != None, " op:", op, len(self.idFprs), self.idFprs)
         if not name and not searchFpr:
+            # neither looking for a Namecoin id/ nor for a fingerprint - hand over to standard keyserver
             if request:
+                log.debug("lookup:standard:", name)
                 return self.proxy_to_standard_pks(request)
-            else:
+            else:  # should never happen
                 bottle.abort(403, "No request and search not recognized: " + unicode(search))
 
         # allow index of keys in idFprs
@@ -241,6 +260,7 @@ class RequestHandler(object):
 
         log.debug("lookup: id/:", name, "searchFpr:", searchFpr)
 
+        # handle Namecoin ID lookup
         if not standalone:
             idRequest = IdRequest(name)
         else:
@@ -259,10 +279,10 @@ class RequestHandler(object):
         log.debug("lookup: updated cache:", name, cacheFpr, len(self.idFprs))
 
         if op == "index":
-            log.debug("index:", name)
+            log.debug("lookup:index:", name)
             return idRequest.get_index()
         elif op == "get":
-            log.debug("get:", name)
+            log.debug("lookup:get:", name)
             k = idRequest.get_key(self.standardKeyServer)
             return k
         else:
@@ -305,7 +325,7 @@ if __name__ == "__main__":
         if 0:
             rh = RequestHandler()
             print rh.lookup('id/phelix', 'index') + "\n"
-            print rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'index') + "\n"
+            print rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'get') + "\n"  # will detect id from cache because of previous id/ lookup
             print rh.lookup('id/phelix', 'get')[:100] + "...\n"  # public keyserver
             print rh.lookup('id/domob', 'get')[:100] + "...\n"  # custom server
         else:
