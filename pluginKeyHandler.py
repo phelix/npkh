@@ -63,8 +63,8 @@ if standalone:
     log.debug("rpcConnectionType:", rpcConnectionType)
     log.debug("rpcOptions:", rpcOptions)
 
-class pluginKeyServer(plugin.PluginThread):
-    name = 'keyServer'
+class pluginKeyHandler(plugin.PluginThread):
+    name = 'keyHandler'
     options = {
         'start' : ['Launch at startup', 1],
         'host' : ['Listen on ip', DEFAULTHOST, '<ip>'],
