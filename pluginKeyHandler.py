@@ -317,7 +317,7 @@ class KeyServer(object):
 
 if __name__ == "__main__":
     print "nmcKeyServer: standalone"
-    if 0:
+    if 1:
         ks = KeyServer()
         ks.start()
     else:
