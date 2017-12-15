@@ -27,12 +27,7 @@ reg = re.compile(ALLOWEDRE)
 standalone = False
 if __name__ == "__main__":
     standalone = True
-    import sys
-    sys.path.append("../lib")  # for standalone debugging
-    #sys.path.append("../../nameGUI/lib")  # for standalone debugging
-
     import namerpc
-
     # cache looked up rpc options
     tmpRpc = namerpc.CoinRpc(connectionType="auto")
     rpcConnectionType = tmpRpc.connectionType
@@ -162,7 +157,7 @@ class IdRequest(object):
 ##            k = urllib2.urlopen(req).read()
 ##            #k = urllib2.urlopen(url).read()  # dangerous?
 ##        except KeyError:  # standalone without NMControl
-        k = urllib2.urlopen(url).read()  # dangerous?
+        k = urllib2.urlopen(url).read()
         return k
 
     def get_key(self, standardKeyServer):
@@ -292,7 +287,7 @@ class KeyServer(object):
         self.app.server.shutdown()  # todo: simplify with bottle v0.13
 
     def serve(self):
-        log.debug("request url:", bottle.request.url)
+        log.debug(".............. request url:", bottle.request.url)
 
         return self.rh.lookup_req(bottle.request)
 
