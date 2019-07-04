@@ -31,7 +31,7 @@ wsgiref.simple_server.make_server = my_make_server
 
 def remove_value(dic, value):
     """remove all items with value if any (in place)"""
-    for k, v in dic.items():
+    for k, v in list(dic.items()):
         if v == value:
            del dic[k]
 
