@@ -111,10 +111,11 @@ class pluginKeyHandler(plugin.PluginThread):
 ##    return n.fingerprint
 
 class IdRequest(object):
-    def __init__(self, name):
+    def __init__(self, name, standardKeyServer):
         if not reg.match(name):
             bottle.abort(400, "Wrong id/ format.")
         self.name = name
+        self.standardKeyServer = standardKeyServer
 
     def get_value(self, name):
         try:
@@ -169,13 +170,13 @@ class IdRequest(object):
         log.debug("get_index s:", s)
         return s
 
-    def get_key(self, standardKeyServer):
+    def get_key(self):
         try:
             url = self.value["gpg"]["uri"]
             log.debug("get_key: trying custom key url:", url)
             k = urlopen(url).read()
         except:
-            url = ("https://" + standardKeyServer +
+            url = ("https://" + self.standardKeyServer +
                    "/pks/lookup?op=get&options=mr&search=0x" + self.fpr)
             log.debug("get_key: trying keyserver url:", url)
             k = urlopen(url).read()
@@ -255,9 +256,9 @@ class RequestHandler(object):
 
         # handle Namecoin ID lookup
         if not standalone:
-            idRequest = IdRequest(name)
+            idRequest = IdRequest(name, self.standardKeyServer)
         else:
-            idRequest = StandaloneIdRequest(name)
+            idRequest = StandaloneIdRequest(name, self.standardKeyServer)
 
         fpr = idRequest.get_fpr()
 
@@ -276,8 +277,7 @@ class RequestHandler(object):
             return idRequest.get_index()
         elif op == "get":
             log.debug("lookup:get:", name)
-            k = idRequest.get_key(self.standardKeyServer)
-            return k
+            return idRequest.get_key()  # will try custom server, then standardKeyServer
         else:
             bottle.abort(501, "Not implemented.")
 
