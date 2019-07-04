@@ -169,33 +169,16 @@ class IdRequest(object):
         log.debug("get_index s:", s)
         return s
 
-    def url_read(self, url):
-# todo: make this work with NMControl as global system DNS source (also see proxy_to_standard_pks below)
-##        try:
-##            # getaddrinfo is not thread safe
-##            urlParts = urlparse.urlparse(url)
-##            ip = common.app['services']['dns'].lookup({'domain':urlParts.netloc, 'qtype':1})[0]["data"]
-##            urlIp = urlParts._replace(netloc=ip).geturl()
-##            headers = { 'Host' : urlParts.netloc }
-##            req = Request(urlIp, headers=headers) #origin_req_host=urlParts.netloc)
-##            log.debug("--------------req:", req)
-##
-##            k = urlopen(req).read()
-##            #k = urlopen(url).read()  # dangerous?
-##        except KeyError:  # standalone without NMControl
-        k = urlopen(url).read()
-        return k
-
     def get_key(self, standardKeyServer):
         try:
             url = self.value["gpg"]["uri"]
             log.debug("get_key: trying custom key url:", url)
-            k = self.url_read(url)
+            k = urlopen(url).read()
         except:
             url = ("https://" + standardKeyServer +
                    "/pks/lookup?op=get&options=mr&search=0x" + self.fpr)
             log.debug("get_key: trying keyserver url:", url)
-            k = self.url_read(url)
+            k = urlopen(url).read()
         log.debug("get_key: ok, len: " + str(len(k)))
         return k
 
@@ -233,7 +216,7 @@ class RequestHandler(object):
     def proxy_to_standard_pks(self, request):
         """Pass request through to default keyserver."""
         # currently this will break with NMControl as global system DNS because of
-        # getaddrinfo not being thread safe (see get_key above)
+        # getaddrinfo not being thread safe
         log.debug("proxying to " + self.standardKeyServer)
         url = request.urlparts._replace(  # _replace is a public function despite the underscore
                         netloc=self.standardKeyServer, scheme="https").geturl()
