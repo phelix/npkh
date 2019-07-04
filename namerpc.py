@@ -28,6 +28,8 @@
 # todo: setting an empty value does not work
 # separate NMControl and client?
 
+from __future__ import print_function
+
 import bitcoinrpc.authproxy
 import socket
 import json
@@ -136,7 +138,7 @@ class CoinRpc(object):
             self.options = self.get_options()
 
         if DEBUG:
-            print "options:", self.options
+            print("options:", self.options)
 
         if not connectionType in [CONTYPECLIENT, CONTYPENMCONTROL]:
             self._detect_connection()
@@ -204,7 +206,7 @@ class CoinRpc(object):
                 if e.errno == 10053:  # closed by host
                     # workaround for closed connection - why? timeout?
                     if DEBUG:
-                        print "connection closed by host, setting up new one"
+                        print("connection closed by host, setting up new one")
                     self.setup_authServiceProxy()
                     val['result'] = self.authServiceProxy.__getattr__(method)(*params)
                 else:
@@ -253,14 +255,14 @@ class CoinRpc(object):
             try:
                 options = self.get_options_client()
                 if DEBUG:
-                    print "client options from conf file:", options
+                    print("client options from conf file:", options)
             except:
                 pass
             if not 'rpcuser' in options or not 'rpcpassword' in options:
                 # fall back to cookie authentication
                 options = self.get_cookie_auth(options)
                 if DEBUG:
-                    print "client options with cookie auth:", options
+                    print("client options with cookie auth:", options)
             return options
         if self.connectionType == CONTYPENMCONTROL:
             return {"rpcport":DEFAULTNMCONTROLPORT}
@@ -268,7 +270,7 @@ class CoinRpc(object):
 
     def get_cookie_auth(self, options):
         if DEBUG:
-            print "cookie auth"
+            print("cookie auth")
         try:
             filename = self.datadir + "/" + COOKIEAUTH_FILE
             with open(filename) as f:
@@ -346,36 +348,36 @@ class CoinRpc(object):
 
 if __name__ == "__main__":
     rpc = CoinRpc(connectionType=CONTYPECLIENT)
-    print rpc.call("getblockhash", [33])
-    print rpc.call("getinfo")
-    #print rpc.nm_show("d/nx")
+    print(rpc.call("getblockhash", [33]))
+    print(rpc.call("getinfo"))
+    #print(rpc.nm_show("d/nx"))
 
     # test timeout
     time.sleep(66)
-    print rpc.call("getinfo")
+    print(rpc.call("getinfo"))
 
     if len(sys.argv) == 1:
-        print "========auto detect"
+        print("========auto detect")
         rpc = CoinRpc()  # default: connectionType="auto"
-        print "detected:", rpc.connectionType
+        print("detected:", rpc.connectionType)
 
-        print "\n\n========NMControl"
+        print("\n\n========NMControl")
         try:
             rpc = CoinRpc(connectionType=CONTYPENMCONTROL)
-            print rpc.call("help")["reply"]
-            print rpc.nm_show("d/nx")
+            print(rpc.call("help")["reply"])
+            print(rpc.nm_show("d/nx"))
         except:
             traceback.print_exc()
 
-        print "\n\n========Namecoind"
+        print("\n\n========Namecoind")
         rpc = CoinRpc(connectionType=CONTYPECLIENT)
-        print "options:", rpc.options
-        print rpc.call("getinfo")
-        print rpc.nm_show("d/nx")
+        print("options:", rpc.options)
+        print(rpc.call("getinfo"))
+        print(rpc.nm_show("d/nx"))
 
-        print '\n\n========Command line usage examples'
-        print 'namerpc.py getinfo'
-        print 'namerpc.py name_show d/nx'
+        print('\n\n========Command line usage examples')
+        print('namerpc.py getinfo')
+        print('namerpc.py name_show d/nx')
 
     else:
         import pprint

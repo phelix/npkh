@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 DEFAULTHOST = "127.0.0.1"  # 0.0.0.0 allows public access
 DEFAULTPORT = "8083"
@@ -49,7 +50,16 @@ if __name__ == "__main__":
     del tmpRpc
 
 import json
-import urllib2
+
+try:
+    from urllib import quote  # Python 2.X
+except ImportError:
+    from urllib.parse import quote  # Python 3+
+try:
+    from urllib2 import urlopen  # Python 2.X
+except ImportError:
+    from urllib.request import urlopen  # Python 3+
+
 import bottle
 
 import common
@@ -153,7 +163,7 @@ class IdRequest(object):
                     v = self.value[f]["default"]
                 else:
                     v = self.value[f]
-                n.append(urllib2.quote(v))
+                n.append(quote(v))
         s += "uid:" + " - ".join(n)
 
         log.debug("get_index s:", s)
@@ -163,17 +173,17 @@ class IdRequest(object):
 # todo: make this work with NMControl as global system DNS source (also see proxy_to_standard_pks below)
 ##        try:
 ##            # getaddrinfo is not thread safe
-##            urlParts = urllib2.urlparse.urlparse(url)
+##            urlParts = urlparse.urlparse(url)
 ##            ip = common.app['services']['dns'].lookup({'domain':urlParts.netloc, 'qtype':1})[0]["data"]
 ##            urlIp = urlParts._replace(netloc=ip).geturl()
 ##            headers = { 'Host' : urlParts.netloc }
-##            req = urllib2.Request(urlIp, headers=headers) #origin_req_host=urlParts.netloc)
+##            req = Request(urlIp, headers=headers) #origin_req_host=urlParts.netloc)
 ##            log.debug("--------------req:", req)
 ##
-##            k = urllib2.urlopen(req).read()
-##            #k = urllib2.urlopen(url).read()  # dangerous?
+##            k = urlopen(req).read()
+##            #k = urlopen(url).read()  # dangerous?
 ##        except KeyError:  # standalone without NMControl
-        k = urllib2.urlopen(url).read()
+        k = urlopen(url).read()
         return k
 
     def get_key(self, standardKeyServer):
@@ -181,7 +191,7 @@ class IdRequest(object):
             url = self.value["gpg"]["uri"]
             log.debug("get_key: trying custom key url:", url)
             k = self.url_read(url)
-        except: #  (KeyError, urllib2.URLError, urllib2.HTTPError):
+        except:
             url = ("https://" + standardKeyServer +
                    "/pks/lookup?op=get&options=mr&search=0x" + self.fpr)
             log.debug("get_key: trying keyserver url:", url)
@@ -228,7 +238,7 @@ class RequestHandler(object):
         url = request.urlparts._replace(  # _replace is a public function despite the underscore
                         netloc=self.standardKeyServer, scheme="https").geturl()
         log.debug("modified request:", url)
-        return urllib2.urlopen(url).read()
+        return urlopen(url).read()
 
     def lookup_req(self, request):
         search = request.query.search
@@ -316,7 +326,7 @@ class KeyServer(object):
 
 
 if __name__ == "__main__":
-    print "nmcKeyServer: standalone"
+    print("nmcKeyServer: standalone")
     if 1:
         ks = KeyServer()
         ks.start()
@@ -324,13 +334,13 @@ if __name__ == "__main__":
         # testing
         if 0:
             rh = RequestHandler()
-            print rh.lookup('id/phelix', 'index') + "\n"
-            print rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'get') + "\n"  # will detect id from cache because of previous id/ lookup
-            print rh.lookup('id/phelix', 'get')[:100] + "...\n"  # public keyserver
-            print rh.lookup('id/domob', 'get')[:100] + "...\n"  # custom server
+            print(rh.lookup('id/phelix', 'index') + "\n")
+            print(rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'get') + "\n")  # will detect id from cache because of previous id/ lookup
+            print(rh.lookup('id/phelix', 'get')[:100] + "...\n")  # public keyserver
+            print(rh.lookup('id/domob', 'get')[:100] + "...\n")  # custom server
         else:
-            print urllib2.urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read()[0:100] + "...\n"
-            print urllib2.urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read() + "\n"
-            print urllib2.urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index").read() + "\n"
-            print urllib2.urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=get").read()[0:100] + "..." + "\n"
-            print urllib2.urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=get").read()[0:100] + "..." + "\n"
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read().decode('utf-8')[0:100] + "...\n")
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read().decode('utf-8') + "\n")
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index").read().decode('utf-8') + "\n")
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=get").read().decode('utf-8')[0:100] + "..." + "\n")

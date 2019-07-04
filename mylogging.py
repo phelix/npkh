@@ -17,12 +17,17 @@ def ensure_dirs(path):
 
 from logging import *
 
+try:
+    unicode_str = unicode  # Python 2.X
+except NameError:
+    unicode_str = str  # Python 3+
+
 def join_args_unicode(*args):
     """Join arguments as unicode string representations."""
     args2 = []
     for arg in args:
         try:
-            arg = unicode(arg)
+            arg = unicode_str(arg)
         except UnicodeDecodeError:
             try:
                 arg = arg.decode("utf-8")

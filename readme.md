@@ -17,7 +17,7 @@ Namecoin PGP Key Handler mimics a standard PGP keyserver locally using the OpenP
   
 **How to run**  
 * run Namecoin Client (blockchain must be completely downloaded) or a drop in replacement (SPV client)  
-* Python 2.7.x must be installed  
+* Python 3 or Python 2.7.x must be installed (NMControl only works with Python 2.7.x)  
   
 in standalone mode:  
 * install python-bitcoinrpc: `pip install --upgrade python-bitcoinrpc`  

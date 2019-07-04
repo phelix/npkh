@@ -3,9 +3,12 @@ app = common.app  # global NMControl app object
 import threading
 import os
 from optparse import OptionGroup
-from ConfigParser import SafeConfigParser
-#import optparse
-#import ConfigParser
+
+try:
+    from ConfigParser import SafeConfigParser  # Python 2.X
+except ImportError:
+    from configparser import SafeConfigParser  # Python 3+
+
 import inspect
 
 log = common.get_logger(__name__)
