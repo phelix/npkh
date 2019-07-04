@@ -164,7 +164,7 @@ class IdRequest(object):
                 else:
                     v = self.value[f]
                 n.append(quote(v))
-        s += "uid:" + " - ".join(n)
+        s += "uid:" + " - ".join(n) + "\n"
 
         log.debug("get_index s:", s)
         return s
@@ -324,6 +324,7 @@ if __name__ == "__main__":
         else:
             print(urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read().decode('utf-8')[0:100] + "...\n")
             print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read().decode('utf-8') + "\n")
+            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=index").read().decode('utf-8') + "\n")
             print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index").read().decode('utf-8') + "\n")
             print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
             print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
