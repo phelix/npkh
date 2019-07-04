@@ -24,10 +24,12 @@ in standalone mode:
 * install python bottle: `pip install --upgrade bottle`  
 * download: e.g. `git clone https://github.com/phelix/npkh`  
 * run the Python file: `python ./pluginKeyHandler.py`  
+* Configuration by editing defaults in pluginKeyHandler.py  
   
 as NMControl plugin:  
 * put pluginKeyHandler.py into the NMControl subfolder 'plugin'  
 * launch NMControl (stop other instances first then launch e.g. from the command line with: `python ./nmcontrol.py --debug=1`)  
+* Configuration via NMControl conf file plugin-keyServer.conf  
   
 then:  
 * from PGP enabled eMail program (tested with Thunderbird) --> enigmail --> key management --> keyserver  
