@@ -96,15 +96,26 @@ class pluginKeyHandler(plugin.PluginThread):
         self.server = None
         return True
 
-## This could be used to check the key matches the fingerprint at the end of get_key().
-## Should not be necessary as it will be checked by the importing software.
-##import pgpdump
-##
-##def get_fingerprint(asciiArmored):
-##    a = pgpdump.AsciiData(asciiArmored)
-##    p = a.packets()
-##    n = p.next()
-##    return n.fingerprint
+import pgpdump
+def calc_fingerprint(asciiArmored):
+    a = pgpdump.AsciiData(asciiArmored)
+    p = a.packets()
+    n = p.next()
+    fpr = "0x" + n.fingerprint.lower()
+    log.debug("calc_fingerprint:", fpr)
+    return fpr
+
+def validate_fingerprint(fpr, s):
+    calculatedFpr = calc_fingerprint(s)
+    if not "0x" in fpr:
+        fpr = "0x" + fpr
+    try:
+        assert fpr.lower() == calculatedFpr
+    except AssertionError:
+        log.debug("validate_fingerprint: Query does not match calculated fingerprint:", fpr.lower(), calculatedFpr)
+        raise
+    else:
+        log.debug("validate_fingerprint: proxy_to_standard_pks: match", calculatedFpr)
 
 class BaseIdRequest(object):
     def __init__(self, name, standardKeyServer):
@@ -176,6 +187,7 @@ class BaseIdRequest(object):
                    "/pks/lookup?op=get&options=mr&search=0x" + self.fpr)
             log.debug("get_key: trying keyserver url:", url)
             k = urlopen(url).read()
+        validate_fingerprint(self.fpr, k)
         log.debug("get_key: ok, len: " + str(len(k)))
         return k
 
@@ -254,6 +266,8 @@ class RequestHandler(object):
             idRequest = IdRequest(name, self.standardKeyServer)
         else:
             idRequest = StandaloneIdRequest(name, self.standardKeyServer)
+        if op.lower() == "get":
+            validate_fingerprint(search, s)
 
         fpr = idRequest.get_fpr()
 
