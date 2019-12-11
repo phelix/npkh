@@ -42,16 +42,6 @@ import re
 ALLOWEDRE = "^id/[a-z0-9]+([-]?[a-z0-9])*$"
 reg = re.compile(ALLOWEDRE)
 
-standalone = False
-if __name__ == "__main__":
-    standalone = True
-    import namerpc
-    # cache looked up rpc options
-    tmpRpc = namerpc.CoinRpc(connectionType="auto")
-    rpcConnectionType = tmpRpc.connectionType
-    rpcOptions = tmpRpc.options
-    del tmpRpc
-
 import json
 
 try:
@@ -67,17 +57,18 @@ import bottle
 
 from expiringdict import ExpiringDict
 
+import namerpc
+
 import common
-if standalone:
+
+if __name__ == "__main__":
     common.app['debug'] = True
+
 import plugin
 
 log = common.get_logger(__name__)
 
-if standalone:
-    log.debug("rpcConnectionType:", rpcConnectionType)
-    log.debug("rpcOptions:", rpcOptions)
-
+# Code to work as NMControl plugin
 class pluginKeyHandler(plugin.PluginThread):
     name = 'keyHandler'
     options = {
@@ -91,13 +82,13 @@ class pluginKeyHandler(plugin.PluginThread):
     def pStart(self):
         if self.server:
             return
-        log.debug("Plugin %s parent start" %(self.name))
+        log.debug("Plugin %s parent start" % (self.name))
         self.keyServer = KeyServer()
         self.running = 1
         self.keyServer.start()
 
     def pStop(self, arg = []):
-        log.debug("Plugin %s parent stop" %(self.name))
+        log.debug("Plugin %s parent stop" % (self.name))
         if not self.running:
             return True
         self.keyServer.stop()
@@ -115,7 +106,7 @@ class pluginKeyHandler(plugin.PluginThread):
 ##    n = p.next()
 ##    return n.fingerprint
 
-class IdRequest(object):
+class BaseIdRequest(object):
     def __init__(self, name, standardKeyServer):
         if not reg.match(name):
             bottle.abort(400, "Wrong id/ format.")
@@ -188,7 +179,7 @@ class IdRequest(object):
         log.debug("get_key: ok, len: " + str(len(k)))
         return k
 
-class StandaloneIdRequest(IdRequest):
+class StandaloneIdRequest(BaseIdRequest):
     def get_value(self, name):
         rpc = namerpc.CoinRpc(connectionType=rpcConnectionType,
                               options=rpcOptions)
@@ -291,7 +282,6 @@ class KeyServer(object):
         self.host = host
         self.port = port
         self.standardKeyServer = standardKeyServer
-        self.standalone = standalone
         self.app = bottle.Bottle()
         self.app.route('/pks/lookup', ['GET', 'POST'], self.serve)
         self.app.route('/pks/add', ['GET', 'POST'], self.httpError501)  # as per the hkp spec
@@ -310,25 +300,3 @@ class KeyServer(object):
 
     def httpError501(self):
         bottle.abort(501, "Not implemented.")
-
-
-if __name__ == "__main__":
-    print("nmcKeyServer: standalone")
-    if 1:
-        ks = KeyServer()
-        ks.start()
-    else:
-        # testing
-        if 0:
-            rh = RequestHandler()
-            print(rh.lookup('id/phelix', 'index') + "\n")
-            print(rh.lookup('0xFC819E25D6AC1119F748479DCBF940B772132E18', 'get') + "\n")  # will detect id from cache because of previous id/ lookup
-            print(rh.lookup('id/phelix', 'get')[:100] + "...\n")  # public keyserver
-            print(rh.lookup('id/domob', 'get')[:100] + "...\n")  # custom server
-        else:
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read().decode('utf-8')[0:100] + "...\n")
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read().decode('utf-8') + "\n")
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=index").read().decode('utf-8') + "\n")
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index").read().decode('utf-8') + "\n")
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
-            print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
