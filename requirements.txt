@@ -1,2 +1,3 @@
 bottle
 python-bitcoinrpc
+expiringdict

@@ -5,6 +5,9 @@ DEFAULTHOST = "127.0.0.1"  # 0.0.0.0 allows public access
 DEFAULTPORT = "8083"
 DEFAULTKEYSERVER = "sks-keyservers.net"
 
+CACHETIMETOLIVEMINUTES = 5
+MAXCACHESIZE = 10
+
 """
 The main OpenPGP HTTP Keyserver Protocol functions are 'index' to search for a list
 of keys and 'get' to retrieve a pgp key corresponding to a fingerprint. PGP keys are
@@ -61,6 +64,8 @@ except ImportError:
     from urllib.request import urlopen  # Python 3+
 
 import bottle
+
+from expiringdict import ExpiringDict
 
 import common
 if standalone:
@@ -208,9 +213,8 @@ class StandaloneIdRequest(IdRequest):
 
 class RequestHandler(object):
     def __init__(self, standardKeyServer=DEFAULTKEYSERVER):
-        # cache to connecting fingerprints to names - all lowercase so we don't have to handle 0X instead of 0x
-        self.idFprs = {}
-
+        # cache for connecting fingerprints to names - all lowercase so we don't have to handle 0X instead of 0x
+        self.idFprs = ExpiringDict(max_len=MAXCACHESIZE, max_age_seconds=60*CACHETIMETOLIVEMINUTES)
         self.standardKeyServer = standardKeyServer
         log.debug("New RequestHandler")
 
