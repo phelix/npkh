@@ -134,7 +134,10 @@ class BaseIdRequest(object):
         self.value = self.get_value(self.name)
         self.fpr = self._extract_fpr()
 
-    def get_value(self, name):
+    def get_fpr(self):
+        return self.fpr
+
+    def get_value(self, name):  # is overwritten for standalone mode in class StandaloneIdRequest
         try:
             value = common.app['plugins']['data'].getValueProcessed(name)
         except Exception as e:  # todo: proper error handling in NMControl
@@ -154,6 +157,7 @@ class BaseIdRequest(object):
             except KeyError:
                 bottle.abort(415, "No fingerprint found in " + str(self.name))
         fpr = fpr.lower()
+
         # check fpr
         try:
             int(fpr, base=16)
@@ -226,6 +230,8 @@ class StandaloneIdRequest(BaseIdRequest):
         log.debug("get_value value:", type(value), value)
         return value
 
+class IdRequest(BaseIdRequest):
+    pass
 class RequestHandler(object):
     def __init__(self, standardKeyServer=DEFAULTKEYSERVER):
         # cache for connecting fingerprints to names - all lowercase so we don't have to handle 0X instead of 0x
@@ -247,40 +253,7 @@ class RequestHandler(object):
         if request:
             url = request.urlparts._replace(  # _replace is a public function despite the underscore
                         netloc=self.standardKeyServer, scheme="https").geturl()
-
-    def lookup_req(self, request):
-        search = request.query.search
-        op = request.query.op
-        return self.lookup(search, op, request=request)
-
-    def lookup(self, search, op, request=None):
-        name = None
-        if search.startswith("id/"):  # looking up a Namecoin id/ ?
-            name = search
-
-        searchFpr = None
-        if search.lower() in self.idFprs:  # looking up a cached fingerprint?
-            searchFpr = search.lower()
-
-        log.debug("lookup: search:", search, " name:", name, " searchFpr:", searchFpr,
-                  " request:", request != None, " op:", op, len(self.idFprs), self.idFprs)
-        if not name and not searchFpr:
-            # neither looking for a Namecoin id/ nor for a fingerprint - hand over to standard keyserver
-            if request:
-                log.debug("lookup:standard:", name)
-                return self.proxy_to_standard_pks(request)
-            else:  # should never happen
-                bottle.abort(403, "No request and search not recognized: " + unicode(search))
-
-        # allow index of keys in idFprs
-        if searchFpr:
-            name = self.idFprs[searchFpr]
-
-        log.debug("lookup: id/:", name, "searchFpr:", searchFpr)
-
-        # handle Namecoin ID lookup
-        if not standalone:
-            idRequest = IdRequest(name, self.standardKeyServer)
+            log.debug("modified request:", url)
         else:
             url = self.build_url(search, op)
         s = urlopen(url).read()
@@ -288,26 +261,62 @@ class RequestHandler(object):
             validate_fingerprint(search, s)
         return s
 
-        fpr = idRequest.get_fpr()
+    def get_cached_name(self, fpr):
+        name = self.idFprs[fpr]
+        return name
 
-        # if searching by fingerprint make sure to adhere
-        if searchFpr and searchFpr != "0x" + fpr:
-            bottle.abort(503, "Fingerprint mismatch. Out of date?")
-
-        # keep cache up to date
+    def update_cache(self, name, fpr):
         remove_value(self.idFprs, name)  # maybe a key was revoked (in place operation)
         cacheFpr = "0x" + fpr.lower()
         self.idFprs[cacheFpr] = name
         log.debug("lookup: updated cache:", name, cacheFpr, len(self.idFprs))
 
+    def lookup_from_name(self, name, op):
+        log.debug("lookup_from_name: ", name, " op:", op)
+        idRequest = IdRequest(name, self.standardKeyServer)
+        fpr = idRequest.get_fpr()
+        self.update_cache(name, fpr)
+        if op == "get":
+            return idRequest.get_key()
+        return idRequest.get_index()
+
+    def lookup_op_from_idFpr(self, idFpr, op):
+        log.debug("lookup_idFpr", idFpr, op)
+        name = self.get_cached_name(idFpr)
+
+        # is the requested fingerprint still the correct one for the name in the cache or is the cache wrong by now?
+        idRequest = IdRequest(name, self.standardKeyServer)
+        currentFpr = idRequest.get_fpr()
+        if idFpr != "0x" + currentFpr:
+            bottle.abort(503, "Fingerprint mismatch. Out of date?")
+
         if op == "index":
-            log.debug("lookup:index:", name)
             return idRequest.get_index()
         elif op == "get":
-            log.debug("lookup:get:", name)
             return idRequest.get_key()  # will try custom server, then standardKeyServer
-        else:
-            bottle.abort(501, "Not implemented.")
+
+    def lookup_req(self, request):
+        search = request.query.search
+        op = request.query.op
+        if op not in ["get", "index"]:
+            bottle.abort(501, "Operation not implemented: " + str(op))
+        return self.lookup(search, op, request=request)
+
+    def lookup(self, search, op, request=None):
+        log.debug("lookup: search:", search, " request:", request != None, " op:", op, len(self.idFprs))
+
+        # looking up a Namecoin id/ ?
+        if search.startswith("id/"):
+            name = search
+            return self.lookup_from_name(name, op)
+
+        # looking up a cached fingerprint?
+        if search.lower() in self.idFprs:
+            idFpr = search.lower()
+            return self.lookup_op_from_idFpr(idFpr, op)
+
+        # if neither looking for a Namecoin id/ nor for a fingerprint - hand over to standard keyserver
+        return self.proxy_to_standard_pks(request, search, op)
 
 class KeyServer(object):
     def __init__(self, host=DEFAULTHOST, port=DEFAULTPORT,
