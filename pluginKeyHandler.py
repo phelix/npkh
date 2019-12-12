@@ -131,6 +131,8 @@ class BaseIdRequest(object):
             bottle.abort(400, "Wrong id/ format.")
         self.name = name
         self.standardKeyServer = standardKeyServer
+        self.value = self.get_value(self.name)
+        self.fpr = self._extract_fpr()
 
     def get_value(self, name):
         try:
@@ -142,10 +144,8 @@ class BaseIdRequest(object):
         log.debug("get_value value:", type(value), value)
         return value
 
-    def get_fpr(self):
-        self.value = self.get_value(self.name)
-
-        # fetch fpr
+    def _extract_fpr(self):
+        # extract fpr
         try:
             fpr = self.value["gpg"]["fpr"]
         except KeyError:
@@ -161,7 +161,6 @@ class BaseIdRequest(object):
             bottle.abort(415, "Bad fingerprint.")
         if len(fpr) < 40:  # 40: sha1
             bottle.abort(415, "Insecure fingerprint.")
-        self.fpr = fpr
         return fpr
 
     def get_index(self):
