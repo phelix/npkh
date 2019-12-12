@@ -233,15 +233,20 @@ class RequestHandler(object):
         self.standardKeyServer = standardKeyServer
         log.debug("New RequestHandler")
 
-    def proxy_to_standard_pks(self, request):
+    def build_url(self, search, op):
+        url = "https://" + self.standardKeyServer + "/pks/lookup?search=" + search + "&op=" + op
+        url += "&options=mr"  # text
+        log.debug("build_url:", url)
+        return url
+
+    def proxy_to_standard_pks(self, request, search, op):
         """Pass request through to default keyserver."""
         # currently this will break with NMControl as global system DNS because of
         # getaddrinfo not being thread safe
         log.debug("proxying to " + self.standardKeyServer)
-        url = request.urlparts._replace(  # _replace is a public function despite the underscore
+        if request:
+            url = request.urlparts._replace(  # _replace is a public function despite the underscore
                         netloc=self.standardKeyServer, scheme="https").geturl()
-        log.debug("modified request:", url)
-        return urlopen(url).read()
 
     def lookup_req(self, request):
         search = request.query.search
@@ -277,9 +282,11 @@ class RequestHandler(object):
         if not standalone:
             idRequest = IdRequest(name, self.standardKeyServer)
         else:
-            idRequest = StandaloneIdRequest(name, self.standardKeyServer)
+            url = self.build_url(search, op)
+        s = urlopen(url).read()
         if op.lower() == "get":
             validate_fingerprint(search, s)
+        return s
 
         fpr = idRequest.get_fpr()
 
