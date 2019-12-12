@@ -138,7 +138,7 @@ class BaseIdRequest(object):
         except Exception as e:  # todo: proper error handling in NMControl
             bottle.abort(502, "Backend error (NMControl internal): " + repr(e))
         if value == False:
-            bottle.abort(404, "Name not found.")
+            bottle.abort(404, "Name not found or expired.")  # NMControl does not deliever expired names
         log.debug("get_value value:", type(value), value)
         return value
 
@@ -214,11 +214,16 @@ class StandaloneIdRequest(BaseIdRequest):
             data = json.loads(data)
         except TypeError:
             pass
+        if data["expired"] != False:
+            bottle.abort(498, "id/ name is expired: " + str(name))
         value = data["value"]
         try:
             value = json.loads(value)
         except TypeError:
             pass
+        except ValueError:  # generic error from json decode
+            bottle.abort(415, "Error json decoding name value for " + str(name))
+
         log.debug("get_value value:", type(value), value)
         return value
 
