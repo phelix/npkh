@@ -15,8 +15,15 @@ pluginKeyHandler.IdRequest = pluginKeyHandler.StandaloneIdRequest
 
 urlopen = pluginKeyHandler.urlopen
 
+# nicer exceptions for command line
+def raise_exception(code, message):
+    raise Exception(str(code) + ": " + str(message))
+pluginKeyHandler.bottle.abort = raise_exception
+
+
 # cache looked up rpc options
 import namerpc
+pluginKeyHandler.namerpc = namerpc
 tmpRpc = namerpc.CoinRpc(connectionType="auto")
 pluginKeyHandler.rpcConnectionType = tmpRpc.connectionType
 pluginKeyHandler.rpcOptions = tmpRpc.options

@@ -63,7 +63,6 @@ import bottle
 
 from expiringdict import ExpiringDict
 
-import namerpc
 
 import common
 

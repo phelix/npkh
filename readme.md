@@ -34,7 +34,7 @@ as NMControl plugin:
 then:  
 * from PGP enabled eMail program (tested with Thunderbird) --> enigmail --> key management --> keyserver  
 * as keyserver enter 127.0.0.1:8083 (default)  
-* search for e.g. id/domob id/phelix id/jeremy id/hlandau  
+* search for e.g. id/domob id/phelix id/jeremy  
 * you can also search for non id/ keys as usual  
   
 **Notes**
