@@ -61,18 +61,18 @@ elif "--test_direct" in sys.argv:
             return s
         rh = pluginKeyHandler.RequestHandler()
 
-        s = rh.lookup("id/phelix", "index")
+        s = str(rh.lookup("id/phelix", "index"))
         print(s + "\n")
         fpr = parse_fpr(s)
         print("fpr:", fpr)
-        print(rh.lookup(fpr + "z", "index") + "\n")  # will detect id from cache and check whether it's still up to date
-        print(rh.lookup(fpr, "get")[:100] + "\n")
+        print(str(rh.lookup(fpr + "z", "index")) + "\n")  # will detect id from cache and check whether it's still up to date
+        print(str(rh.lookup(fpr, "get"))[:100] + "\n")
 
         s = rh.lookup("id/domob", "index")
         print(s + "\n")
         fpr = parse_fpr(s)
         print("fpr:", fpr)
-        print(rh.lookup(fpr, "get")[:100] + "...\n")  # domob is offering a custom server which we will use to get the key
+        print(str(rh.lookup(fpr, "get"))[:100] + "...\n")  # domob is offering a custom server which we will use to get the key
 elif "--test_query" in sys.argv:
         print(urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read().decode('utf-8')[0:100] + "...\n")
         print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read().decode('utf-8') + "\n")
@@ -82,6 +82,6 @@ elif "--test_query" in sys.argv:
         print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0x1142850e6dff65ba63d688a8b2492ac4a7330737&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
 elif op:
     rh = pluginKeyHandler.RequestHandler()
-    print(rh.lookup(arg, op))
+    print(str(rh.lookup(arg, op)))
 else:
     raise Exception("error / nothing to do (--help for help)")

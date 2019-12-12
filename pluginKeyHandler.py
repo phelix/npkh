@@ -32,6 +32,12 @@ def my_make_server(*args, **kwargs):
 wsgiref.simple_server.make_server = my_make_server
 # now stop via app.server.shutdown()
 
+# Python3 compatibility
+try:
+    unicode("")
+except NameError:
+    unicode = str
+
 def remove_value(dic, value):
     """remove all items with value if any (in place)"""
     for k, v in list(dic.items()):
@@ -100,8 +106,11 @@ import pgpdump
 def calc_fingerprint(asciiArmored):
     a = pgpdump.AsciiData(asciiArmored)
     p = a.packets()
-    n = p.next()
-    fpr = "0x" + n.fingerprint.lower()
+    try:  # python 2 compatibility
+        n = p.next()
+    except AttributeError:
+        n = next(p)
+    fpr = "0x" + n.fingerprint.lower().decode("utf-8")
     log.debug("calc_fingerprint:", fpr)
     return fpr
 
@@ -144,7 +153,7 @@ class BaseIdRequest(object):
             try:
                 fpr = self.value["fpr"]  # untidy?
             except KeyError:
-                bottle.abort(415, "No fingerprint found in " + unicode(self.name))
+                bottle.abort(415, "No fingerprint found in " + str(self.name))
         fpr = fpr.lower()
         # check fpr
         try:
@@ -198,7 +207,7 @@ class StandaloneIdRequest(BaseIdRequest):
         try:
             data = rpc.nm_show(name)
         except namerpc.NameDoesNotExistError:
-            bottle.abort(404, "Name not found.")
+            bottle.abort(404, "Name not found: " + str(name))
         except namerpc.RpcError:
             bottle.abort(502, "Backend error (rpc).")
 
