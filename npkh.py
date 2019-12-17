@@ -30,7 +30,7 @@ pluginKeyHandler.rpcOptions = tmpRpc.options
 del tmpRpc
 
 def help():
-    print("npkh - Namecoin PGP Key Handler v0.1")
+    print("npkh - Namecoin PGP Key Handler v0.2")
     print()
     print("npkh index id/phelix")
     print("npkh get id/phelix")

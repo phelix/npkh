@@ -175,7 +175,7 @@ class BaseIdRequest(object):
         #"pub:<keyid>:<algo>:<keylen>:<creationdate>:<expirationdate>:<flags>"
 
         s = "info:1:1\n"
-        s += "pub:" + self.fpr + "\n"
+        s += "pub:" + self.fpr + ":::468374400::\n"
 
         n = [self.name]
         for f in ["name", "email", "country", "locality"]:
