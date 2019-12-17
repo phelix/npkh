@@ -50,14 +50,19 @@ reg = re.compile(ALLOWEDRE)
 
 import json
 
+import contextlib
+
 try:
     from urllib import quote  # Python 2.X
 except ImportError:
     from urllib.parse import quote  # Python 3+
 try:
-    from urllib2 import urlopen  # Python 2.X
+    from urllib2 import urlopen as urlopen_orig # Python 2.X
 except ImportError:
-    from urllib.request import urlopen  # Python 3+
+    from urllib.request import urlopen as urlopen_orig  # Python 3+
+
+def urlopen(url):  # ensure "with"-context manager also in Python 2
+    return contextlib.closing(urlopen_orig(url))
 
 import bottle
 
@@ -192,12 +197,14 @@ class BaseIdRequest(object):
         try:
             url = self.value["gpg"]["uri"]
             log.debug("get_key: trying custom key url:", url)
-            k = urlopen(url).read()
+            with urlopen(url) as response:
+                k = response.read()
         except:
             url = ("https://" + self.standardKeyServer +
                    "/pks/lookup?op=get&options=mr&search=0x" + self.fpr)
             log.debug("get_key: trying keyserver url:", url)
-            k = urlopen(url).read()
+            with urlopen(url) as response:
+                k = response.read()
         validate_fingerprint(self.fpr, k)
         log.debug("get_key: ok, len: " + str(len(k)))
         return k
@@ -256,9 +263,11 @@ class RequestHandler(object):
             log.debug("modified request:", url)
         else:
             url = self.build_url(search, op)
-        s = urlopen(url).read()
+        with urlopen(url) as response:
+            s = response.read()
         if op.lower() == "get":
             validate_fingerprint(search, s)
+        log.debug("proxying done. bytes:", len(s))
         return s
 
     def get_cached_name(self, fpr):
