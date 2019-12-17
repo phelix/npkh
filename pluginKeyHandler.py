@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
 
 DEFAULTHOST = "127.0.0.1"  # 0.0.0.0 allows public access
 DEFAULTPORT = "8083"
-DEFAULTKEYSERVER = "sks-keyservers.net"
+DEFAULTKEYSERVER = "sks-keyservers.net"  # only TLS enabled servers!
 
 CACHETIMETOLIVEMINUTES = 5
 MAXCACHESIZE = 10
@@ -305,6 +304,7 @@ class RequestHandler(object):
             return idRequest.get_key()  # will try custom server, then standardKeyServer
 
     def lookup_req(self, request):
+        bottle.response.content_type = 'text/plain; charset=utf-8'
         search = request.query.search
         op = request.query.op
         if op not in ["get", "index"]:
