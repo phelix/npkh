@@ -20,15 +20,6 @@ def raise_exception(code, message):
     raise Exception(str(code) + ": " + str(message))
 pluginKeyHandler.bottle.abort = raise_exception
 
-
-# cache looked up rpc options
-import namerpc
-pluginKeyHandler.namerpc = namerpc
-tmpRpc = namerpc.CoinRpc(connectionType="auto")
-pluginKeyHandler.rpcConnectionType = tmpRpc.connectionType
-pluginKeyHandler.rpcOptions = tmpRpc.options
-del tmpRpc
-
 def help():
     print("npkh - Namecoin PGP Key Handler v0.2")
     print()

@@ -135,8 +135,13 @@ class BaseIdRequest(object):
             bottle.abort(400, "Wrong id/ format.")
         self.name = name
         self.standardKeyServer = standardKeyServer
+        self.__init2__()
+
         self.value = self.get_value(self.name)
         self.fpr = self._extract_fpr()
+
+    def __init2__(self):
+        pass
 
     def get_fpr(self):
         return self.fpr
@@ -209,9 +214,26 @@ class BaseIdRequest(object):
         return k
 
 class StandaloneIdRequest(BaseIdRequest):
-    def get_value(self, name):
-        rpc = namerpc.CoinRpc(connectionType=rpcConnectionType,
-                              options=rpcOptions)
+    def __init2__(self):
+        log.debug("StandaloneIdRequest: init2")
+        self.rpcConnectionType = None
+        global namerpc
+        import namerpc
+
+    def get_rpc(self):
+        if not self.rpcConnectionType:
+            log.debug("get_rpc: init rpc")
+            tmpRpc = namerpc.CoinRpc(connectionType="auto")
+            self.rpcConnectionType = tmpRpc.connectionType
+            self.rpcOptions = tmpRpc.options
+        return namerpc.CoinRpc(connectionType=self.rpcConnectionType,
+                              options=self.rpcOptions)
+
+    def rpc(self, method, args=[]):
+        rpc = self.get_rpc()
+        log.debug("StandaloneIdRequest:rpc: ", repr(method), repr(args))
+        return rpc.call(method, args)
+
         try:
             data = rpc.nm_show(name)
         except namerpc.NameDoesNotExistError:
@@ -225,7 +247,10 @@ class StandaloneIdRequest(BaseIdRequest):
             pass
         if data["expired"] != False:
             bottle.abort(498, "id/ name is expired: " + str(name))
+    def get_value(self, name):
+        data = self.get_data()
         value = data["value"]
+
         try:
             value = json.loads(value)
         except TypeError:
@@ -236,8 +261,10 @@ class StandaloneIdRequest(BaseIdRequest):
         log.debug("get_value value:", type(value), value)
         return value
 
+
 class IdRequest(BaseIdRequest):
     pass
+
 class RequestHandler(object):
     def __init__(self, standardKeyServer=DEFAULTKEYSERVER):
         # cache for connecting fingerprints to names - all lowercase so we don't have to handle 0X instead of 0x
