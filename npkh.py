@@ -56,6 +56,7 @@ elif "--test_direct" in sys.argv:
         def parse_fpr(s):
             s = s.split("\n")[1]
             s = s.replace("pub:", "0x")
+            s = s.split(":")[0]
             return s
         rh = pluginKeyHandler.RequestHandler()
 
@@ -63,21 +64,24 @@ elif "--test_direct" in sys.argv:
         print(s + "\n")
         fpr = parse_fpr(s)
         print("fpr:", fpr)
-        print(str(rh.lookup(fpr + "z", "index")) + "\n")  # will detect id from cache and check whether it's still up to date
+        print(str(rh.lookup(fpr, "index")) + "\n")  # will detect id from cache and check whether it's still up to date
         print(str(rh.lookup(fpr, "get"))[:100] + "\n")
 
-        s = rh.lookup("id/domob", "index")
+        s = str(rh.lookup("id/domob", "index"))
         print(s + "\n")
         fpr = parse_fpr(s)
         print("fpr:", fpr)
         print(str(rh.lookup(fpr, "get"))[:100] + "...\n")  # domob is offering a custom server which we will use to get the key
 elif "--test_query" in sys.argv:
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr").read().decode('utf-8')[0:100] + "...\n")
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index").read().decode('utf-8') + "\n")
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=index").read().decode('utf-8') + "\n")
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index").read().decode('utf-8') + "\n")
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
-        print(urlopen("http://127.0.0.1:8083/pks/lookup?search=0x1142850e6dff65ba63d688a8b2492ac4a7330737&op=get").read().decode('utf-8')[0:100] + "..." + "\n")
+        def url_read(url):
+            with urlopen(url) as response:
+                return response.read().decode('utf-8')
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=antonopoulos&op=index&options=mr")[0:100] + "...\n")
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=id/phelix&op=index") + "\n")
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=id/domob&op=index") + "\n")
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=index") + "\n")
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=0xFC819E25D6AC1119F748479DCBF940B772132E18&op=get")[0:100] + "..." + "\n")
+        print(url_read("http://127.0.0.1:8083/pks/lookup?search=0x1142850e6dff65ba63d688a8b2492ac4a7330737&op=get")[0:100] + "..." + "\n")
 elif op:
     rh = pluginKeyHandler.RequestHandler()
     print(str(rh.lookup(arg, op)))
