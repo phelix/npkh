@@ -146,16 +146,6 @@ class BaseIdRequest(object):
     def get_fpr(self):
         return self.fpr
 
-    def get_value(self, name):  # is overwritten for standalone mode in class StandaloneIdRequest
-        try:
-            value = common.app['plugins']['data'].getValueProcessed(name)
-        except Exception as e:  # todo: proper error handling in NMControl
-            bottle.abort(502, "Backend error (NMControl internal): " + repr(e))
-        if value == False:
-            bottle.abort(404, "Name not found or expired.")  # NMControl does not deliever expired names
-        log.debug("get_value value:", type(value), value)
-        return value
-
     def _extract_fpr(self):
         # extract fpr
         try:
@@ -176,11 +166,27 @@ class BaseIdRequest(object):
             bottle.abort(415, "Insecure fingerprint.")
         return fpr
 
+    def get_value(self, name):  # is overwritten for standalone mode in class StandaloneIdRequest
+        try:
+            value = common.app['plugins']['data'].getValueProcessed(name)
+        except Exception as e:  # todo: proper error handling in NMControl
+            bottle.abort(502, "Backend error (NMControl internal): " + repr(e))
+        if value == False:
+            bottle.abort(404, "Name not found or expired.")  # NMControl does not deliever expired names
+        log.debug("get_value value:", type(value), value)
+        return value
+
+    def get_time(self):  # NMControl does not support name creation date information nor rpc queries
+        nameTime = 468374400  # 1984-11-04
+        return nameTime
+
     def get_index(self):
         #"pub:<keyid>:<algo>:<keylen>:<creationdate>:<expirationdate>:<flags>"
 
+        age = self.get_time()
+
         s = "info:1:1\n"
-        s += "pub:" + self.fpr + ":::468374400::\n"
+        s += "pub:" + self.fpr + ":::" + str(age) + "::\n"
 
         n = [self.name]
         for f in ["name", "email", "country", "locality"]:
@@ -234,10 +240,11 @@ class StandaloneIdRequest(BaseIdRequest):
         log.debug("StandaloneIdRequest:rpc: ", repr(method), repr(args))
         return rpc.call(method, args)
 
+    def get_data(self):
         try:
-            data = rpc.nm_show(name)
+            data = self.rpc("name_show", [self.name])
         except namerpc.NameDoesNotExistError:
-            bottle.abort(404, "Name not found: " + str(name))
+            bottle.abort(404, "Name not found: " + str(self.name))
         except namerpc.RpcError:
             bottle.abort(502, "Backend error (rpc).")
 
@@ -246,7 +253,10 @@ class StandaloneIdRequest(BaseIdRequest):
         except TypeError:
             pass
         if data["expired"] != False:
-            bottle.abort(498, "id/ name is expired: " + str(name))
+            bottle.abort(498, "id/ name is expired: " + str(self.name))
+
+        return data
+
     def get_value(self, name):
         data = self.get_data()
         value = data["value"]
@@ -261,6 +271,17 @@ class StandaloneIdRequest(BaseIdRequest):
         log.debug("get_value value:", type(value), value)
         return value
 
+    def get_time(self):
+        try:
+            data = self.get_data()
+            height = data["height"]
+            blockHash = self.rpc("getblockhash", [height])
+            nameTime = self.rpc("getblockheader", [blockHash])["mediantime"]
+            log.debug("get_time:nameTime", nameTime)
+        except Exception as e:
+            log.debug("get_time: Exception: " + repr(e))
+            nameTime = 468374400  # 1984-11-04
+        return nameTime
 
 class IdRequest(BaseIdRequest):
     pass
